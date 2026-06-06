@@ -1,96 +1,67 @@
 ```html
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Hub - Premium</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        primary: '#3b82f6',
-                        darkBg: '#0f172a',
-                        lightBg: '#f8fafc',
-                    }
-                }
-            }
-        }
-    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Appwrite SDK -->
     <script src="https://cdn.jsdelivr.net/npm/appwrite@15.0.0"></script>
     
     <style>
         body {
-            transition: background-color 0.3s, color 0.3s;
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            background-image: radial-gradient(circle at top right, #e0e7ff, #f8fafc, #f1f5f9);
+            color: #1e293b;
         }
-        /* Стили для Glassmorphism */
-        .glass-dark {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .glass-light {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        /* Стили для Glassmorphism (Стекло) */
+        .glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
         }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark .custom-scroll::-webkit-scrollbar-thumb { background: #475569; }
         
         /* Спиннер загрузки */
         .loader {
             border: 2px solid transparent;
             border-top-color: currentColor;
             border-radius: 50%;
-            width: 1rem;
-            height: 1rem;
+            width: 1.2rem;
+            height: 1.2rem;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-lightBg text-slate-800 dark:bg-darkBg dark:text-slate-100 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
 
-    <!-- Уведомления (Тосты) -->
-    <div id="toast-container" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <!-- Уведомления -->
+    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Шапка -->
-    <header class="w-full glass-light dark:glass-dark sticky top-0 z-40 transition-all duration-300">
+    <header class="w-full glass sticky top-0 z-40">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg">SH</div>
-                <h1 class="font-bold text-xl tracking-tight hidden sm:block">Service Hub</h1>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center font-bold text-white shadow-md">SH</div>
+                <h1 class="font-bold text-xl tracking-tight text-slate-800">Service Hub</h1>
             </div>
             
-            <div class="flex items-center gap-3">
-                <!-- Кнопка смены темы -->
-                <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-                    <!-- Иконка Солнца (для темной темы) -->
-                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                    <!-- Иконка Луны (для светлой темы) -->
-                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                </button>
-
-                <!-- Юзер Инфо -->
-                <div id="user-header" class="hidden flex items-center gap-3 border-l border-slate-300 dark:border-slate-700 pl-3">
-                    <div class="text-right flex flex-col justify-center">
-                        <span id="header-name" class="text-sm font-bold text-blue-600 dark:text-blue-400 leading-tight"></span>
-                        <span id="header-role" class="text-[10px] uppercase font-semibold text-slate-500">Пользователь</span>
-                    </div>
-                    <button onclick="logout()" title="Выйти" class="p-2 bg-red-100 dark:bg-red-500/10 text-red-500 hover:bg-red-200 dark:hover:bg-red-500/20 rounded-lg transition">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    </button>
+            <div id="user-header" class="hidden flex items-center gap-4 border-l border-slate-200 pl-4">
+                <div class="text-right flex flex-col justify-center">
+                    <span id="header-name" class="text-sm font-bold text-blue-600 leading-tight"></span>
+                    <span id="header-role" class="text-[10px] uppercase font-bold text-slate-400">Пользователь</span>
                 </div>
+                <button onclick="logout()" title="Выйти" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                </button>
             </div>
         </div>
     </header>
@@ -100,28 +71,28 @@
         <div class="w-full max-w-lg">
             
             <!-- ЭКРАН АВТОРИЗАЦИИ -->
-            <div id="auth-screen" class="glass-light dark:glass-dark rounded-3xl p-6 sm:p-8 shadow-2xl transition-all">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold mb-1">Доступ к сервисам</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Введите данные для входа или регистрации</p>
+            <div id="auth-screen" class="glass rounded-3xl p-8 shadow-2xl transition-all">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-1">Доступ к сервисам</h2>
+                    <p class="text-sm text-slate-500">Войдите или зарегистрируйтесь по Нику</p>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <input id="auth-nick" type="text" placeholder="Ваш Никнейм" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <input id="auth-nick" type="text" placeholder="Ваш Никнейм" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition text-slate-800 shadow-sm">
                     </div>
                     <div>
-                        <input id="auth-pass" type="password" placeholder="Пароль (минимум 8 символов)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <input id="auth-pass" type="password" placeholder="Пароль (минимум 8 символов)" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition text-slate-800 shadow-sm">
                     </div>
 
-                    <div class="flex gap-3 pt-2">
-                        <button id="btn-login" onclick="login()" class="flex-1 flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30">
+                    <div class="flex gap-3 pt-4">
+                        <button id="btn-login" onclick="login()" class="flex-1 flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-50 shadow-lg shadow-blue-500/30">
                             <span>Войти</span>
                             <div class="loader hidden" id="load-login"></div>
                         </button>
-                        <button id="btn-reg" onclick="register()" class="flex-1 flex justify-center items-center gap-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button id="btn-reg" onclick="register()" class="flex-1 flex justify-center items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3.5 rounded-xl transition border border-slate-200 disabled:opacity-50">
                             <span>Создать</span>
-                            <div class="loader hidden border-slate-500 dark:border-white" id="load-reg"></div>
+                            <div class="loader hidden border-slate-400" id="load-reg"></div>
                         </button>
                     </div>
                 </div>
@@ -131,83 +102,79 @@
             <div id="main-screen" class="hidden space-y-4">
                 
                 <!-- Меню -->
-                <nav class="glass-light dark:glass-dark rounded-2xl p-1.5 flex gap-1 shadow-lg">
-                    <button onclick="switchTab('steam')" id="tab-steam" class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-blue-600 text-white shadow-md transition">Стим</button>
-                    <button onclick="switchTab('vpn')" id="tab-vpn" class="flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition">VPN</button>
-                    <button onclick="switchTab('support')" id="tab-support" class="flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition relative">
-                        Поддержка
-                        <!-- Индикатор непрочитанных (визуальный) -->
-                        <span class="absolute top-2 right-4 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <nav class="glass rounded-2xl p-1.5 flex gap-1 shadow-md">
+                    <button onclick="switchTab('vpn')" id="tab-vpn" class="flex-1 py-3 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition">VPN Ключи</button>
+                    <button onclick="switchTab('support')" id="tab-support" class="flex-1 py-3 text-sm font-semibold rounded-xl bg-blue-600 text-white shadow-md transition relative">
+                        Поддержка / Steam
+                        <span class="absolute top-2 right-4 w-2 h-2 bg-green-400 rounded-full animate-pulse border border-white"></span>
                     </button>
                 </nav>
 
-                <!-- Вкладка: СТИМ -->
-                <div id="content-steam" class="glass-light dark:glass-dark rounded-3xl p-6 shadow-xl">
-                    <div class="text-center mb-6">
-                        <div class="inline-block px-3 py-1 bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-full text-xs font-bold mb-3">Игровой Доступ</div>
-                        <h2 class="text-2xl font-bold">Стим Аккаунт</h2>
-                    </div>
-
-                    <div id="steam-ui" class="text-center">
-                        <div class="animate-pulse text-sm text-slate-500">Загрузка статуса...</div>
-                    </div>
-                </div>
-
                 <!-- Вкладка: VPN -->
-                <div id="content-vpn" class="hidden glass-light dark:glass-dark rounded-3xl p-6 shadow-xl">
-                    <h2 class="text-xl font-bold mb-4">VPN Доступ</h2>
+                <div id="content-vpn" class="hidden glass rounded-3xl p-6 shadow-xl">
+                    <h2 class="text-xl font-bold mb-4 text-slate-800">VPN Доступ</h2>
                     
                     <!-- Админ Панель VPN -->
-                    <div id="admin-vpn" class="hidden mb-4 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-500/20 space-y-3">
-                        <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">Добавить Ключ (Админ)</p>
-                        <input id="vpn-name" type="text" placeholder="Название (например: Outline)" class="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-lg text-sm border border-slate-200 dark:border-slate-700 outline-none">
-                        <input id="vpn-key" type="text" placeholder="Ключ (vless://...)" class="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-lg text-sm border border-slate-200 dark:border-slate-700 outline-none">
-                        <button onclick="addVPN()" class="w-full py-2 bg-indigo-600 text-white font-bold rounded-lg text-sm">Выложить на сайт</button>
+                    <div id="admin-vpn" class="hidden mb-4 p-4 rounded-xl bg-indigo-50 border border-indigo-100 space-y-3">
+                        <p class="text-xs font-bold text-indigo-600 uppercase">Добавить Ключ (Админ)</p>
+                        <input id="vpn-name" type="text" placeholder="Название (например: Outline)" class="w-full px-3 py-2.5 bg-white rounded-lg text-sm border border-slate-200 outline-none focus:border-indigo-400">
+                        <input id="vpn-key" type="text" placeholder="Ключ (vless://...)" class="w-full px-3 py-2.5 bg-white rounded-lg text-sm border border-slate-200 outline-none focus:border-indigo-400">
+                        <button onclick="addVPN()" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-lg text-sm shadow-md">Выложить на сайт</button>
                     </div>
 
                     <div id="vpn-list" class="space-y-3 max-h-[350px] overflow-y-auto custom-scroll pr-2">
-                        <!-- Список VPN -->
+                        <div class="text-center text-sm text-slate-400 py-4">Загрузка ключей...</div>
                     </div>
                 </div>
 
-                <!-- Вкладка: ПОДДЕРЖКА -->
-                <div id="content-support" class="hidden glass-light dark:glass-dark rounded-3xl p-4 shadow-xl flex flex-col h-[500px]">
+                <!-- Вкладка: ПОДДЕРЖКА И СТИМ -->
+                <div id="content-support" class="glass rounded-3xl p-4 sm:p-6 shadow-xl flex flex-col h-[550px]">
                     
                     <!-- Шапка чата -->
-                    <div class="border-b border-slate-200 dark:border-slate-700 pb-3 mb-3 flex justify-between items-center px-2">
-                        <div>
-                            <h3 class="font-bold text-sm">Оператор</h3>
-                            <p class="text-[10px] text-green-500 font-semibold">В сети</p>
+                    <div class="border-b border-slate-100 pb-3 mb-3 flex justify-between items-center px-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+                            <div>
+                                <h3 class="font-bold text-sm text-slate-800">Связь с оператором</h3>
+                            </div>
                         </div>
                         
                         <!-- Селектор для Админа -->
                         <div id="admin-chat-tools" class="hidden">
-                            <select id="admin-user-select" onchange="changeChat(this.value)" class="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 outline-none">
-                                <option value="">Выберите чат</option>
+                            <select id="admin-user-select" onchange="changeChat(this.value)" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 outline-none font-medium shadow-sm cursor-pointer">
+                                <option value="">Выберите чат...</option>
                             </select>
                         </div>
                     </div>
 
                     <!-- Панель управления аккаунтом (Только Админ) -->
-                    <div id="admin-steam-tools" class="hidden mb-3 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl">
+                    <div id="admin-steam-tools" class="hidden mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-amber-600 dark:text-amber-400">Управление запросом Steam</span>
+                            <span class="text-xs font-bold text-amber-700">Пользователь запросил Стим</span>
                         </div>
                         <div class="flex gap-2">
-                            <input id="admin-steam-data" type="text" placeholder="Логин:Пароль" class="flex-grow px-2 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none">
-                            <button onclick="approveSteam()" class="px-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold transition">Выдать</button>
+                            <input id="admin-steam-data" type="text" placeholder="Логин:Пароль" class="flex-grow px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg outline-none">
+                            <button onclick="approveSteam()" class="px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold transition shadow-sm">Выдать</button>
                         </div>
                     </div>
 
                     <!-- Окно сообщений -->
                     <div id="chat-box" class="flex-grow overflow-y-auto custom-scroll pr-2 space-y-3 pb-2 text-sm flex flex-col">
-                        <div class="text-center text-xs text-slate-400 my-auto">История сообщений пуста</div>
+                        <div class="text-center text-xs text-slate-400 my-auto">Загрузка чата...</div>
+                    </div>
+
+                    <!-- Кнопка запроса Стим (Для обычного юзера) -->
+                    <div id="user-steam-action" class="hidden mb-3 border-t border-slate-100 pt-3">
+                        <button onclick="requestSteam()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition transform active:scale-95 flex justify-center items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Запросить Стим Аккаунт
+                        </button>
                     </div>
 
                     <!-- Ввод текста -->
-                    <div class="pt-3 flex gap-2">
-                        <input id="chat-input" type="text" placeholder="Написать оператору..." onkeypress="if(event.key==='Enter') sendMsg()" class="flex-grow px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-blue-500 text-sm transition">
-                        <button onclick="sendMsg()" class="p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-md">
+                    <div class="pt-3 flex gap-2 border-t border-slate-100 mt-auto">
+                        <input id="chat-input" type="text" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') sendMsg()" class="flex-grow px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 focus:bg-white text-sm transition">
+                        <button onclick="sendMsg()" class="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-md">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                         </button>
                     </div>
@@ -218,13 +185,8 @@
     </main>
 
     <script>
-        // ИНИЦИАЛИЗАЦИЯ ТЕМЫ
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-        }
-
         // КОНФИГУРАЦИЯ APPWRITE
-        const { Client, Account, Databases, ID } = Appwrite;
+        const { Client, Account, Databases, ID, Query } = Appwrite;
         const client = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject('69f223f4002d7c30c1b9');
         const account = new Account(client);
         const databases = new Databases(client);
@@ -235,40 +197,37 @@
 
         let user = null;
         let isAdmin = false;
-        let activeTab = 'steam';
-        let adminActiveChat = null; // ID пользователя, с которым общается админ
+        let activeTab = 'support';
+        
+        let userDocId = null; // ID документа текущего пользователя в базе steam_requests
+        let adminActiveDocId = null; // ID документа, который просматривает админ
 
-        // Уведомления (вместо alert)
+        // Красивые уведомления
         function notify(msg, isError = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `px-4 py-3 rounded-xl shadow-xl text-sm font-semibold transition-all duration-300 transform translate-y-10 opacity-0 ${isError ? 'bg-red-500 text-white' : 'bg-slate-800 text-white dark:bg-white dark:text-slate-800'}`;
+            toast.className = `px-5 py-3 rounded-2xl shadow-xl text-sm font-bold transition-all duration-300 transform -translate-y-10 opacity-0 ${isError ? 'bg-red-500 text-white' : 'bg-white text-slate-800 border border-slate-100'}`;
             toast.innerText = msg;
             container.appendChild(toast);
             
-            // Анимация появления
-            setTimeout(() => { toast.classList.remove('translate-y-10', 'opacity-0'); }, 10);
-            // Удаление
+            setTimeout(() => { toast.classList.remove('-translate-y-10', 'opacity-0'); }, 10);
             setTimeout(() => {
-                toast.classList.add('opacity-0');
+                toast.classList.add('opacity-0', '-translate-y-5');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // Блокировка кнопок авторизации
         function setAuthLoading(btnId, loaderId, isLoading) {
             document.getElementById(btnId).disabled = isLoading;
             document.getElementById(loaderId).style.display = isLoading ? 'block' : 'none';
         }
 
-        // ПРОВЕРКА СЕССИИ ПРИ ЗАГРУЗКЕ
+        // ПРОВЕРКА СЕССИИ
         window.onload = async () => {
             try {
                 user = await account.get();
                 if(user) enterApp();
-            } catch (e) {
-                // нет сессии
-            }
+            } catch (e) {}
         };
 
         // РЕГИСТРАЦИЯ
@@ -286,19 +245,10 @@
                 await account.createEmailPasswordSession(email, pass);
                 user = await account.get();
                 
-                // Создаем профиль в базе
-                try {
-                    await databases.createDocument(DB_ID, COLL_STEAM, user.$id, {
-                        user_id: user.name,
-                        status: 'none',
-                        response: '[SYSTEM]: Добро пожаловать в поддержку!'
-                    });
-                } catch(err) {}
-
                 enterApp();
                 notify('Аккаунт успешно создан!');
             } catch (e) {
-                notify('Ошибка: Ник уже занят или ошибка соединения', true);
+                notify('Ошибка: Ник уже занят.', true);
             } finally {
                 setAuthLoading('btn-reg', 'load-reg', false);
                 setAuthLoading('btn-login', 'load-login', false);
@@ -334,37 +284,64 @@
             location.reload();
         }
 
-        // ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА
-        function enterApp() {
+        // ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА ПОСЛЕ ВХОДА
+        async function enterApp() {
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('main-screen').style.display = 'block';
             document.getElementById('user-header').style.display = 'flex';
             document.getElementById('header-name').innerText = user.name;
 
-            // Админ проверка
-            if (user.email === 'admin@sh.ru' || user.name.toLowerCase() === 'admin') {
+            // САМОЕ ВАЖНОЕ: Проверка на Админа по Нику
+            if (user.name.toLowerCase() === 'admin') {
                 isAdmin = true;
                 document.getElementById('header-role').innerText = 'Администратор';
                 document.getElementById('header-role').classList.add('text-indigo-500');
                 document.getElementById('admin-vpn').style.display = 'block';
                 document.getElementById('admin-chat-tools').style.display = 'block';
+            } else {
+                // Если обычный юзер, инициализируем его документ базы данных
+                await initUserDoc();
             }
 
-            switchTab('steam');
-            setInterval(syncData, 5000); // Обновление каждые 5 сек
+            switchTab('support');
+            setInterval(syncData, 4000); // Обновление чата и данных каждые 4 сек
+        }
+
+        // Инициализация профиля в базе (безопасное создание)
+        async function initUserDoc() {
+            try {
+                // Ищем документ пользователя
+                const res = await databases.listDocuments(DB_ID, COLL_STEAM, [
+                    Query.equal('user_id', user.$id)
+                ]);
+                
+                if (res.total > 0) {
+                    userDocId = res.documents[0].$id;
+                } else {
+                    // Создаем, если нет
+                    const newDoc = await databases.createDocument(DB_ID, COLL_STEAM, ID.unique(), {
+                        user_id: user.$id,
+                        status: 'none',
+                        response: '[SYSTEM]: Добро пожаловать! Здесь вы можете общаться с поддержкой.'
+                    });
+                    userDocId = newDoc.$id;
+                }
+            } catch (e) {
+                console.error("Ошибка БД", e);
+            }
         }
 
         // ВКЛАДКИ
         function switchTab(tab) {
             activeTab = tab;
-            ['steam', 'vpn', 'support'].forEach(t => {
+            ['vpn', 'support'].forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 const content = document.getElementById('content-' + t);
                 if (t === tab) {
-                    btn.className = "flex-1 py-2.5 text-sm font-semibold rounded-xl bg-blue-600 text-white shadow-md transition";
-                    content.style.display = 'block';
+                    btn.className = "flex-1 py-3 text-sm font-semibold rounded-xl bg-blue-600 text-white shadow-md transition relative";
+                    content.style.display = 'flex';
                 } else {
-                    btn.className = "flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition";
+                    btn.className = "flex-1 py-3 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition relative";
                     content.style.display = 'none';
                 }
             });
@@ -374,73 +351,8 @@
         // ОБНОВЛЕНИЕ ДАННЫХ
         async function syncData() {
             if (!user) return;
-            if (activeTab === 'steam') await renderSteam();
             if (activeTab === 'vpn') await renderVPN();
             if (activeTab === 'support') await renderChat();
-        }
-
-        // --- СТИМ ---
-        async function renderSteam() {
-            const ui = document.getElementById('steam-ui');
-            if (isAdmin) {
-                ui.innerHTML = `<p class="text-indigo-500 font-semibold mb-2">Режим Администратора</p><p class="text-sm text-slate-500">Выдавайте аккаунты во вкладке Поддержка.</p>`;
-                return;
-            }
-
-            try {
-                const doc = await databases.getDocument(DB_ID, COLL_STEAM, user.$id);
-                
-                if (doc.status === 'none') {
-                    ui.innerHTML = `
-                        <p class="text-sm text-slate-500 mb-6">Нажмите кнопку ниже, чтобы запросить аккаунт. Выдача происходит в чате поддержки.</p>
-                        <button onclick="requestSteam()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/30 transition transform active:scale-95 text-lg">
-                            Запросить Аккаунт
-                        </button>
-                    `;
-                } else if (doc.status === 'pending') {
-                    ui.innerHTML = `
-                        <div class="p-6 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                            <div class="inline-flex items-center gap-2 text-amber-500 font-bold mb-2">
-                                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                                Запрос отправлен
-                            </div>
-                            <p class="text-sm text-slate-600 dark:text-slate-400">Ожидайте. Оператор пришлет логин и пароль в сообщении с <b>Поддержкой</b>.</p>
-                        </div>
-                    `;
-                } else if (doc.status === 'approved') {
-                    ui.innerHTML = `
-                        <div class="p-6 rounded-2xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20">
-                            <h3 class="text-green-600 dark:text-green-400 font-bold mb-2">✅ Аккаунт выдан!</h3>
-                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Данные отправлены вам в чат Поддержки.</p>
-                            <button onclick="resetSteam()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-semibold rounded-xl text-sm transition">Понятно, закрыть статус</button>
-                        </div>
-                    `;
-                }
-            } catch (e) {
-                // Если документа нет, пересоздадим
-                await databases.createDocument(DB_ID, COLL_STEAM, user.$id, { user_id: user.name, status: 'none', response: '' });
-                renderSteam();
-            }
-        }
-
-        async function requestSteam() {
-            try {
-                const doc = await databases.getDocument(DB_ID, COLL_STEAM, user.$id);
-                const history = doc.response || "";
-                await databases.updateDocument(DB_ID, COLL_STEAM, user.$id, {
-                    status: 'pending',
-                    response: `[SYSTEM]: Пользователь запросил Стим аккаунт.\n${history}`
-                });
-                renderSteam();
-                notify('Запрос успешно отправлен!');
-            } catch (e) { notify('Ошибка отправки', true); }
-        }
-
-        async function resetSteam() {
-            try {
-                await databases.updateDocument(DB_ID, COLL_STEAM, user.$id, { status: 'none' });
-                renderSteam();
-            } catch (e) { notify('Ошибка', true); }
         }
 
         // --- VPN ---
@@ -448,40 +360,41 @@
             const list = document.getElementById('vpn-list');
             try {
                 const res = await databases.listDocuments(DB_ID, COLL_VPN);
-                list.innerHTML = '';
                 if(res.documents.length === 0) {
                     list.innerHTML = '<p class="text-center text-sm text-slate-500 py-4">Ключи пока не добавлены.</p>';
                     return;
                 }
 
+                let html = '';
                 res.documents.forEach(doc => {
-                    const btnDel = isAdmin ? `<button onclick="delVPN('${doc.$id}')" class="text-xs text-red-500 hover:underline">Удалить</button>` : '';
-                    list.innerHTML += `
-                        <div class="p-4 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-bold text-sm">${doc.name}</span>
+                    const btnDel = isAdmin ? `<button onclick="delVPN('${doc.$id}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded">Удалить</button>` : '';
+                    html += `
+                        <div class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-bold text-sm text-slate-800">${doc.name}</span>
                                 ${btnDel}
                             </div>
                             <div class="flex gap-2">
-                                <input type="text" value="${doc.key}" readonly class="flex-grow px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-green-600 dark:text-green-400 outline-none">
-                                <button onclick="copyToClipboard('${doc.key}')" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold rounded-lg text-xs hover:bg-blue-200 dark:hover:bg-blue-500/30 transition">Копия</button>
+                                <input type="text" value="${doc.key}" readonly class="flex-grow px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-mono text-green-600 outline-none">
+                                <button onclick="copyToClipboard('${doc.key}')" class="px-4 py-2 bg-blue-50 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-100 transition">Копия</button>
                             </div>
                         </div>
                     `;
                 });
+                list.innerHTML = html;
             } catch (e) {}
         }
 
         async function addVPN() {
             const name = document.getElementById('vpn-name').value;
             const key = document.getElementById('vpn-key').value;
-            if(!name || !key) return notify('Заполните поля', true);
+            if(!name || !key) return notify('Заполните все поля', true);
             try {
                 await databases.createDocument(DB_ID, COLL_VPN, ID.unique(), { name, key });
                 document.getElementById('vpn-name').value = '';
                 document.getElementById('vpn-key').value = '';
                 renderVPN();
-                notify('Ключ добавлен');
+                notify('VPN Ключ выложен на сайт');
             } catch (e) { notify('Ошибка добавления', true); }
         }
 
@@ -490,49 +403,63 @@
         }
 
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => notify('Скопировано!'));
+            navigator.clipboard.writeText(text).then(() => notify('Ключ скопирован!'));
         }
 
-        // --- ЧАТ ПОДДЕРЖКИ ---
+        // --- ЧАТ И СТИМ ---
         async function renderChat() {
             const box = document.getElementById('chat-box');
             
             if (isAdmin) {
-                // Логика Админа: стянуть список пользователей
+                // ЛОГИКА АДМИНА
                 try {
                     const res = await databases.listDocuments(DB_ID, COLL_STEAM);
                     const sel = document.getElementById('admin-user-select');
                     const currentVal = sel.value;
-                    sel.innerHTML = '<option value="">Выберите пользователя</option>';
                     
+                    let selHtml = '<option value="">Выберите чат пользователя...</option>';
                     let activeDoc = null;
 
                     res.documents.forEach(doc => {
-                        let label = doc.user_id;
-                        if (doc.status === 'pending') label = `🔴 ЗАПРОС: ${doc.user_id}`;
-                        sel.innerHTML += `<option value="${doc.$id}">${label}</option>`;
+                        let label = `ID: ${doc.user_id.substring(0,6)}...`;
+                        if (doc.status === 'pending') label = `🔴 ЗАПРОС СТИМ!`;
+                        else if (doc.status === 'approved') label = `✅ Выдан`;
+                        
+                        selHtml += `<option value="${doc.$id}">${label}</option>`;
                         if (doc.$id === currentVal) activeDoc = doc;
                     });
+                    sel.innerHTML = selHtml;
                     sel.value = currentVal;
-                    adminActiveChat = currentVal;
+                    adminActiveDocId = currentVal;
 
-                    if (adminActiveChat && activeDoc) {
+                    if (adminActiveDocId && activeDoc) {
                         document.getElementById('admin-steam-tools').style.display = activeDoc.status === 'pending' ? 'block' : 'none';
                         drawMessages(activeDoc.response);
                     } else {
-                        box.innerHTML = '<div class="text-center text-xs text-slate-400 my-auto">Выберите чат из списка сверху</div>';
+                        box.innerHTML = '<div class="text-center text-xs text-slate-400 my-auto">Выберите пользователя сверху для начала общения</div>';
                         document.getElementById('admin-steam-tools').style.display = 'none';
                     }
                 } catch (e) {}
             } else {
-                // Логика Юзера
+                // ЛОГИКА ОБЫЧНОГО ПОЛЬЗОВАТЕЛЯ
+                if(!userDocId) return;
                 try {
-                    const doc = await databases.getDocument(DB_ID, COLL_STEAM, user.$id);
+                    const doc = await databases.getDocument(DB_ID, COLL_STEAM, userDocId);
+                    
+                    // Управление кнопкой запроса
+                    const steamBtnBox = document.getElementById('user-steam-action');
+                    if (doc.status === 'none') {
+                        steamBtnBox.style.display = 'block'; // Показываем кнопку
+                    } else {
+                        steamBtnBox.style.display = 'none'; // Прячем кнопку
+                    }
+
                     drawMessages(doc.response);
                 } catch (e) {}
             }
         }
 
+        // Отрисовка сообщений
         function drawMessages(history) {
             const box = document.getElementById('chat-box');
             if (!history) {
@@ -545,36 +472,80 @@
             
             lines.forEach(line => {
                 if (line.startsWith('[SYSTEM]:')) {
-                    html += `<div class="mx-auto my-2 px-3 py-1 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] rounded-lg max-w-[90%] text-center">${line.replace('[SYSTEM]:', '').trim()}</div>`;
+                    html += `<div class="mx-auto my-2 px-4 py-1.5 bg-slate-100 text-slate-500 font-medium text-[10px] rounded-xl max-w-[90%] text-center">${line.replace('[SYSTEM]:', '').trim()}</div>`;
                 } else if (line.startsWith('Admin:')) {
-                    html += `<div class="mr-auto my-1 p-3 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-900 dark:text-indigo-100 rounded-2xl rounded-tl-none max-w-[85%] border border-indigo-200 dark:border-indigo-500/30">
-                        <span class="block text-[10px] font-bold text-indigo-500 uppercase mb-0.5">Оператор</span>
+                    html += `<div class="mr-auto my-1 p-3 bg-indigo-50 text-indigo-900 rounded-2xl rounded-tl-none max-w-[85%] border border-indigo-100 shadow-sm">
+                        <span class="block text-[9px] font-bold text-indigo-500 uppercase mb-1">Оператор</span>
                         ${line.replace('Admin:', '').trim()}
                     </div>`;
                 } else if (line.startsWith('User:')) {
-                    html += `<div class="ml-auto my-1 p-3 bg-blue-600 text-white rounded-2xl rounded-tr-none max-w-[85%]">
-                        <span class="block text-[10px] font-bold text-blue-200 uppercase mb-0.5">Вы</span>
+                    html += `<div class="ml-auto my-1 p-3 bg-blue-600 text-white rounded-2xl rounded-tr-none max-w-[85%] shadow-sm">
+                        <span class="block text-[9px] font-bold text-blue-200 uppercase mb-1">Вы</span>
                         ${line.replace('User:', '').trim()}
                     </div>`;
                 }
             });
             
+            // Защита от автоскролла если юзер читает историю
+            const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 50;
             box.innerHTML = html;
-            box.scrollTop = box.scrollHeight; // Скролл вниз
+            if (isScrolledToBottom) {
+                box.scrollTop = box.scrollHeight;
+            }
         }
 
-        function changeChat(userId) {
-            adminActiveChat = userId;
+        function changeChat(docId) {
+            adminActiveDocId = docId;
             renderChat();
         }
 
+        // Пользователь нажимает "Запросить аккаунт"
+        async function requestSteam() {
+            if(!userDocId) return;
+            try {
+                const doc = await databases.getDocument(DB_ID, COLL_STEAM, userDocId);
+                const history = doc.response || "";
+                
+                await databases.updateDocument(DB_ID, COLL_STEAM, userDocId, {
+                    status: 'pending',
+                    response: `[SYSTEM]: Вы отправили запрос на игровой аккаунт Стим. Ожидайте ответа оператора.\n${history}`
+                });
+                
+                document.getElementById('user-steam-action').style.display = 'none';
+                renderChat();
+                notify('Запрос отправлен оператору!');
+            } catch (e) { notify('Ошибка отправки', true); }
+        }
+
+        // Админ выдает аккаунт
+        async function approveSteam() {
+            if (!adminActiveDocId) return;
+            const data = document.getElementById('admin-steam-data').value.trim();
+            if (!data) return notify('Введите логин:пароль', true);
+
+            try {
+                const doc = await databases.getDocument(DB_ID, COLL_STEAM, adminActiveDocId);
+                const msg = `[SYSTEM]: ✅ Оператор одобрил ваш запрос и выдал аккаунт:\nAdmin: ${data}`;
+                
+                await databases.updateDocument(DB_ID, COLL_STEAM, adminActiveDocId, {
+                    status: 'approved',
+                    response: `${msg}\n${doc.response || ''}`
+                });
+                
+                document.getElementById('admin-steam-data').value = '';
+                notify('Аккаунт успешно отправлен!');
+                renderChat();
+            } catch (e) { notify('Ошибка выдачи', true); }
+        }
+
+        // Отправка сообщений в чат
         async function sendMsg() {
             const inp = document.getElementById('chat-input');
             const txt = inp.value.trim();
             if(!txt) return;
 
-            const targetId = isAdmin ? adminActiveChat : user.$id;
-            if(!targetId) return notify('Сначала выберите чат', true);
+            const targetId = isAdmin ? adminActiveDocId : userDocId;
+            if(!targetId) return notify(isAdmin ? 'Сначала выберите пользователя вверху' : 'Ошибка профиля', true);
 
             try {
                 const doc = await databases.getDocument(DB_ID, COLL_STEAM, targetId);
@@ -584,27 +555,10 @@
                 });
                 inp.value = '';
                 renderChat();
-            } catch (e) { notify('Ошибка отправки', true); }
-        }
-
-        // Админ выдает аккаунт
-        async function approveSteam() {
-            if (!adminActiveChat) return;
-            const data = document.getElementById('admin-steam-data').value.trim();
-            if (!data) return notify('Введите логин и пароль', true);
-
-            try {
-                const doc = await databases.getDocument(DB_ID, COLL_STEAM, adminActiveChat);
-                const msg = `[SYSTEM]: Оператор выдал аккаунт:\nAdmin: ${data}`;
                 
-                await databases.updateDocument(DB_ID, COLL_STEAM, adminActiveChat, {
-                    status: 'approved',
-                    response: `${msg}\n${doc.response || ''}`
-                });
-                document.getElementById('admin-steam-data').value = '';
-                notify('Аккаунт выдан!');
-                renderChat();
-            } catch (e) { notify('Ошибка выдачи', true); }
+                const box = document.getElementById('chat-box');
+                setTimeout(() => box.scrollTop = box.scrollHeight, 100);
+            } catch (e) { notify('Ошибка отправки сообщения', true); }
         }
     </script>
 </body>
